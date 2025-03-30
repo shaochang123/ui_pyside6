@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>33</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuMessage">
+    <property name="title">
+     <string>Message</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuPlot">
+    <property name="title">
+     <string>Plot</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuLearn">
+    <property name="title">
+     <string>Learn</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuSetting">
+    <property name="title">
+     <string>Setting</string>
+    </property>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuMessage"/>
+   <addaction name="menuPlot"/>
+   <addaction name="menuLearn"/>
+   <addaction name="menuSetting"/>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

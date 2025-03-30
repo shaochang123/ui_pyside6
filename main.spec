@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('main.ui', '.'), ('resource/img.png', 'resource'), ('resource/broom.svg', 'resource'), ('resource/pause.svg', 'resource')],
+    datas=[('Message.ui', '.'), ('Plot.ui', '.'), ('resource/img.png', 'resource'), ('resource/broom.svg', 'resource'), ('resource/pause.svg', 'resource'), ('resource/icon.png', 'resource'), ('Menu.ui', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,5 +35,4 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['resource\\atom.png'],
 )
