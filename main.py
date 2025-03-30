@@ -70,7 +70,7 @@ class MainWindow(QObject):
 
     def update_available_ports(self):
         # 安全检查：确保组件存在且有效
-        if not hasattr(self, 'com_combo') or not hasattr(self, 'port_combo'):
+        if not hasattr(self, 'com_combo'):
             return
           
         try:
@@ -229,6 +229,34 @@ class Menu(QObject):
         # 将动作与槽函数连接，用 setCentralWidget 切换界面
         message_action.triggered.connect(self.show_message_widget)
         plot_action.triggered.connect(self.show_plot_widget)
+        
+        # 只创建一个全局定时器来更新所有界面的端口列表
+        self.port_refresh_timer = QTimer()
+        self.port_refresh_timer.timeout.connect(self.update_all_ports)
+        self.port_refresh_timer.start(1000)  # 每秒刷新一次
+        
+    def update_all_ports(self):
+        """更新所有界面的端口列表"""
+        try:
+            # 获取当前可用的串口
+            ports = [port.device for port in serial.tools.list_ports.comports()]
+            
+            # 更新 Message 界面的端口列表
+            if hasattr(self.Message_window, 'com_combo'):
+                current_ports = set(self.Message_window.com_combo.itemText(i) for i in range(self.Message_window.com_combo.count()))
+                if set(ports) != current_ports:
+                    self.Message_window.com_combo.clear()
+                    self.Message_window.com_combo.addItems(ports)
+            
+            # 更新 Plot 界面的端口列表
+            if hasattr(self.Plot_window, 'com_combo'):
+                current_ports = set(self.Plot_window.com_combo.itemText(i) for i in range(self.Plot_window.com_combo.count()))
+                if set(ports) != current_ports:
+                    self.Plot_window.com_combo.clear()
+                    self.Plot_window.com_combo.addItems(ports)
+        except Exception as e:
+            print(f"更新端口列表时出错: {e}")
+            
     def show_message_widget(self):
         """显示消息界面"""
         self.stacked_widget.setCurrentIndex(0)  # 切换到第一个界面
@@ -251,5 +279,7 @@ if __name__ == "__main__":
     Message_path = os.path.join(base_path, "Message.ui")
     Plot_path = os.path.join(base_path, "Plot.ui")
     window = Menu(ui_file)
+    window.window.resize(895, 630)
     window.window.show()
+
     sys.exit(app.exec())
