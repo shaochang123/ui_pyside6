@@ -1,17 +1,19 @@
 from Page.MainWindow import MainWindow
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QSlider, QLabel, QHBoxLayout,QPushButton
+from PySide6.QtCore import QTimer, Qt
 import serial  # 第三方库 pyserial
 import serial.tools.list_ports
 import pyqtgraph as pg
+import pyqtgraph.opengl as gl
+import numpy as np
 import time
-
 class Plot(MainWindow):
     def __init__(self, ui_file):
         super().__init__(ui_file)
+        self.reset_button = self.central_widget.findChild(QPushButton, "reset_button")
         self.start_button.clicked.connect(self.start_port)
         self.close_button.clicked.connect(self.close_port)
-        
+        self.reset_button.clicked.connect(self.reset)
         # 找到占位的QWidget
         self.plot_container = self.central_widget.findChild(QWidget, "plotWidget")
         
@@ -43,7 +45,13 @@ class Plot(MainWindow):
         # 创建定时器用于更新图表
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_plot)
-        self.count = 0  # 用于找到肌电信号
+        
+        # 初始化3D图形
+        self.x = 0
+        self.y = 0
+        self.z = 0
+        self.setup_3d_cube(self.x, self.y, self.z)
+        
     def start_port(self):
         if self.IsOpen:
             print("端口已经打开")
@@ -66,7 +74,7 @@ class Plot(MainWindow):
                 self.x_data = []
                 self.y_data = []
                 self.curve.setData(self.x_data, self.y_data)
-                self.timer.start(100)  # 每100ms更新一次图表
+                self.timer.start(50)  # 每50ms更新一次图表
                 print("端口打开成功，开始绘制数据...")
             else:
                 print("启动端口失败")
@@ -87,31 +95,23 @@ class Plot(MainWindow):
         except Exception as e:
             print(f"关闭端口失败：{str(e)}")
 
-    def toggle_pause(self):  # 暂停绘图
-        if not self.IsOpen:
-            print("端口未打开，无法暂停")
-            return
-        self.IsPause = not self.IsPause  # 切换暂停状态
-        state = "暂停" if self.IsPause else "继续"
-        print(f"串口读取已{state}")
-
-    def clear_message(self):
-        # 清空绘图区域
-        self.x_data = []
-        self.y_data = []
-        self.curve.setData(self.x_data, self.y_data)
-        print("清空绘图数据")
-
     def update_plot(self):
-
         if not self.IsOpen or self.IsPause:
             return
         try:
             if self.serial_port.in_waiting > 0:
                 data_line = self.serial_port.readline().decode('utf-8').strip()
-                if self.count == 1:
+                if data_line[0] == 'A':
+                    data_line = data_line.split(',')
+                    x = float(data_line[3].split(':')[1])
+                    y = float(data_line[4].split(':')[1])
+                    z = float(data_line[5].split(':')[1])
+                    self.x = self.x + x*5000/32768;
+                    self.y = self.y + y*5000/32768;
+                    self.z = self.z + z*5000/32768;
+                    self.update_cube_rotation(-self.x*180/3.14159, -self.z*180/3.14159, -self.y*180/3.14159)
                     return
-                self.count = (self.count + 1) % 2  # 每两次读取一次数据
+                data_line = data_line.split(',')[0]  # 取第一个数据点
                 try:
                     value = float(data_line)
                     current_time = time.time() - self.start_time
@@ -131,3 +131,86 @@ class Plot(MainWindow):
                     print(f"无法将数据转换为浮点数: {data_line}")
         except Exception as e:
             print(f"读取数据出错: {str(e)}")
+            
+    def setup_3d_cube(self, grok_x=0, grok_y=0, grok_z=0):
+        """
+        设置3D正方体并根据传入的角度调整姿态
+        
+        参数:
+            grok_x (float): X轴旋转角度(度)
+            grok_y (float): Y轴旋转角度(度)
+            grok_z (float): Z轴旋转角度(度)
+        """
+        # 找到3D容器
+        self.cube_container = self.central_widget.findChild(QWidget, "cube3dContainer")
+        
+        # 创建布局
+        layout = QVBoxLayout(self.cube_container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        
+        # 创建OpenGL视图
+        self.view_3d = gl.GLViewWidget()
+        layout.addWidget(self.view_3d)
+        
+        # 创建3D网格
+        self.grid = gl.GLGridItem()
+        self.view_3d.addItem(self.grid)
+        
+        # 创建立方体顶点
+        vertices = np.array([
+            [2, 2, 2], [2, 2, -2], [2, -2, 2], [2, -2, -2],
+            [-2, 2, 2], [-2, 2, -2], [-2, -2, 2], [-2, -2, -2]
+        ])
+        
+        # 定义立方体的面
+        faces = np.array([
+            [0, 1, 2], [1, 3, 2],  # 右面
+            [4, 5, 6], [5, 7, 6],  # 左面
+            [0, 1, 4], [1, 5, 4],  # 前面
+            [2, 3, 6], [3, 7, 6],  # 后面
+            [0, 2, 4], [2, 6, 4],  # 上面
+            [1, 3, 5], [3, 7, 5],  # 下面
+        ])
+        
+        # 创建并设置立方体的颜色
+        colors = np.array([
+            [1, 0, 0, 1], [1, 0, 0, 1],  # 右面 (红色)
+            [0, 1, 0, 1], [0, 1, 0, 1],  # 左面 (绿色)
+            [0, 0, 1, 1], [0, 0, 1, 1],  # 前面 (蓝色)
+            [1, 1, 0, 1], [1, 1, 0, 1],  # 后面 (黄色)
+            [1, 0, 1, 1], [1, 0, 1, 1],  # 上面 (紫色)
+            [0, 1, 1, 1], [0, 1, 1, 1],  # 下面 (青色)
+        ])
+        
+        # 创建立方体网格对象
+        self.cube = gl.GLMeshItem(vertexes=vertices, faces=faces, faceColors=colors, smooth=False)
+        self.view_3d.addItem(self.cube)
+        
+        # 设置相机位置
+        self.view_3d.setCameraPosition(distance=10)
+        
+        # 应用旋转
+        self.update_cube_rotation(grok_x, grok_y, grok_z)
+
+    def update_cube_rotation(self, x_angle, y_angle, z_angle):
+        """
+        更新立方体旋转角度
+        
+        参数:
+            x_angle (float): X轴旋转角度(度)
+            y_angle (float): Y轴旋转角度(度)
+            z_angle (float): Z轴旋转角度(度)
+        """
+        if hasattr(self, 'cube'):
+            # 重置立方体方向
+            self.cube.resetTransform()
+            
+            # 按顺序应用旋转（先X，再Y，最后Z）
+            self.cube.rotate(x_angle, 1, 0, 0)
+            self.cube.rotate(y_angle, 0, 1, 0)
+            self.cube.rotate(z_angle, 0, 0, 1)
+    def reset(self):
+        self.x = 0
+        self.y = 0
+        self.z = 0
+    
