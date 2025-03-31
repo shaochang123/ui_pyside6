@@ -13,6 +13,45 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">
+/* 菜单栏背景 */
+QMenuBar {
+    background-color: #2196F3;  /* 蓝色背景 */
+    color: white;               /* 白色文字 */
+}
+
+/* 菜单项样式 */
+QMenuBar::item {
+    background-color: transparent;  /* 默认透明背景 */
+    padding: 5px 10px;             /* 内边距 */
+}
+
+/* 鼠标悬停在菜单项上时 */
+QMenuBar::item:selected {
+    background-color: #0d47a1;  /* 深蓝色 */
+}
+QPushButton {
+    color: white;  /* 白色字体 */
+    border-radius: 8px;  /* 圆角边框 */
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                               stop:0 #2196F3, stop:1 #1976D2);  /* 渐变蓝色 */
+    padding: 5px 15px;  /* 内边距 */
+    font-weight: bold;  /* 粗体 */
+    border: 1px solid #1565C0;  /* 边框颜色 */
+}
+
+QPushButton:hover {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                               stop:0 #42A5F5, stop:1 #2196F3);  /* 悬停时颜色更亮 */
+}
+
+QPushButton:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                               stop:0 #1976D2, stop:1 #0D47A1);  /* 按下时颜色更暗 */
+}
+</string>
+  </property>
   <widget class="QWidget" name="centralwidget"/>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -20,10 +59,13 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>33</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
     <property name="title">
      <string>File</string>
     </property>

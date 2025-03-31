@@ -2,6 +2,7 @@ from PySide6.QtWidgets import QTextEdit, QPushButton
 import serial  # 第三方库 pyserial
 import serial.tools.list_ports
 from Page.MainWindow import MainWindow
+from PySide6.QtCore import QTimer
 class Message(MainWindow):
     def __init__(self, ui_file):
         super().__init__(ui_file)
@@ -12,6 +13,18 @@ class Message(MainWindow):
         self.clear_button.clicked.connect(self.clear_message)
         self.start_button.clicked.connect(self.start_port)
         self.close_button.clicked.connect(self.close_port) # 暂停按钮图标
+        # 定时器，用于读取串口数据
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.read_serial_data)
+    def read_serial_data(self):
+        # 读取串口数据
+        if self.IsOpen and not self.IsPause:
+            try:
+                if self.serial_port.in_waiting > 0:  # 检查是否有数据可读
+                    data = self.serial_port.readline().decode('utf-8').strip()
+                    self.message.append(f"{data}")
+            except Exception as e:
+                self.message.append(f"读取数据失败：{str(e)}")
     def start_port(self):
         if self.IsOpen:
             self.message.append("端口已经打开")

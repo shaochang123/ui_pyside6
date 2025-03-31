@@ -28,6 +28,7 @@ class MainWindow(QObject):
         self.central_widget = central_widget  # 把 central_widget 存到 self.central_widget
 
         # 获取组件
+        
         self.com_name = central_widget.findChild(QTextEdit, "ComName")
         self.bote_name = central_widget.findChild(QTextEdit, "BaudName")
         self.start_button = central_widget.findChild(QPushButton, "start")
@@ -52,9 +53,7 @@ class MainWindow(QObject):
         self.window.setWindowIcon(QIcon("./resource/icon.png"))  # 设置窗口图标
         # 设置按钮图标
 
-        # 定时器，用于读取串口数据
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.read_serial_data)
+        
 
         # 定时器，用于刷新可用串口
         self.port_refresh_timer = QTimer()
@@ -94,23 +93,13 @@ class MainWindow(QObject):
         # 将选中的波特率更新到 BaudName
         self.bote_name.setText(text)
 
-    def read_serial_data(self):
-        # 读取串口数据
-        if self.IsOpen and not self.IsPause:
-            try:
-                if self.serial_port.in_waiting > 0:  # 检查是否有数据可读
-                    data = self.serial_port.readline().decode('utf-8').strip()
-                    self.message.append(f"{data}")
-            except Exception as e:
-                self.message.append(f"读取数据失败：{str(e)}")
-
     def show_img(self,img_path):
         if not os.path.exists(img_path):
-            self.message.append(f"图片文件不存在: {img_path}")
+            print(f"图片文件不存在: {img_path}")
             return
         pixmap = QPixmap(img_path)
         if pixmap.isNull():
-            self.message.append("图片加载失败，请检查图片格式或路径")
+            print("图片加载失败，请检查图片格式或路径")
             return
 
         # 创建场景并加载图片
