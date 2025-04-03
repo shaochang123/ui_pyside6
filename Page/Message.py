@@ -1,6 +1,5 @@
 from PySide6.QtWidgets import QTextEdit, QPushButton
 import serial  # 第三方库 pyserial
-import serial.tools.list_ports
 from Page.MainWindow import MainWindow
 from PySide6.QtCore import QTimer
 class Message(MainWindow):

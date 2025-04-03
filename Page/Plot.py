@@ -1,8 +1,7 @@
 from Page.MainWindow import MainWindow
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QSlider, QLabel, QHBoxLayout,QPushButton
-from PySide6.QtCore import QTimer, Qt
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton
+from PySide6.QtCore import QTimer
 import serial  # 第三方库 pyserial
-import serial.tools.list_ports
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 import numpy as np
@@ -16,28 +15,37 @@ class Plot(MainWindow):
         self.reset_button.clicked.connect(self.reset)
         # 找到占位的QWidget
         self.plot_container = self.central_widget.findChild(QWidget, "plotWidget")
-        
+        # 找到占位的QWidget
+        self.plot_container2 = self.central_widget.findChild(QWidget, "plotWidget2")
+
         # 创建布局
         layout = QVBoxLayout(self.plot_container)
         layout.setContentsMargins(0, 0, 0, 0)  # 移除边距
-        
+        layout2 = QVBoxLayout(self.plot_container2)
+        layout2.setContentsMargins(0, 0, 0, 0)  # 移除边距
         # 创建pyqtgraph绘图窗口并添加到布局
         self.plot_widget = pg.PlotWidget()
         layout.addWidget(self.plot_widget)
-        
+        self.plot_widget2 = pg.PlotWidget()
+        layout2.addWidget(self.plot_widget2)
         # 配置图表属性
         self.plot_widget.setBackground('w')
         self.plot_widget.showGrid(x=True, y=True)
-        self.plot_widget.setLabel('left', '数值')
+        self.plot_widget.setLabel('left', '通道一数值')
         self.plot_widget.setLabel('bottom', '时间 (秒)')
         self.plot_widget.setTitle('实时数据监测')
-        
+        self.plot_widget2.setBackground('w')
+        self.plot_widget2.showGrid(x=True, y=True)
+        self.plot_widget2.setLabel('left', '通道二数值')
+        self.plot_widget2.setLabel('bottom', '时间 (秒)')
+        self.plot_widget2.setTitle('实时数据监测')
         # 创建曲线对象
         self.curve = self.plot_widget.plot(pen=pg.mkPen('b', width=2))
-        
+        self.curve2 = self.plot_widget2.plot(pen=pg.mkPen('b',width=2))
         # 初始化数据存储
         self.x_data = []
         self.y_data = []
+        self.y_data2 = []
         self.start_time = 0
         self.IsOpen = False
         self.IsPause = False
@@ -73,7 +81,9 @@ class Plot(MainWindow):
                 self.start_time = time.time()  # 记录开始时间
                 self.x_data = []
                 self.y_data = []
+                self.y_data2 = []
                 self.curve.setData(self.x_data, self.y_data)
+                self.curve2.setData(self.x_data,self.y_data2)
                 self.timer.start(50)  # 每50ms更新一次图表
                 print("端口打开成功，开始绘制数据...")
             else:
@@ -111,22 +121,25 @@ class Plot(MainWindow):
                     self.z = self.z + z*5000/32768;
                     self.update_cube_rotation(-self.x*180/3.14159, -self.z*180/3.14159, -self.y*180/3.14159)
                     return
-                data_line = data_line.split(',')[0]  # 取第一个数据点
+                data_line = data_line.split(',')  # 取第一个数据点
                 try:
-                    value = float(data_line)
+                    value1 = float(data_line[0])
+                    value2 = float(data_line[2])
                     current_time = time.time() - self.start_time
                     # 添加新数据点
                     self.x_data.append(current_time)
-                    self.y_data.append(value)
-                    
+                    self.y_data.append(value1)
+                    self.y_data2.append(value2)
                     # 限制数据点数量，防止过多数据影响性能
                     max_points = 100
                     if len(self.x_data) > max_points:
                         self.x_data = self.x_data[-max_points:]
                         self.y_data = self.y_data[-max_points:]
+                        self.y_data2 = self.y_data2[-max_points:]
                     
                     # 更新图表
                     self.curve.setData(self.x_data, self.y_data)
+                    self.curve2.setData(self.x_data, self.y_data2)
                 except ValueError:
                     print(f"无法将数据转换为浮点数: {data_line}")
         except Exception as e:

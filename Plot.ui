@@ -102,7 +102,7 @@
       <x>170</x>
       <y>0</y>
       <width>731</width>
-      <height>401</height>
+      <height>221</height>
      </rect>
     </property>
    </widget>
@@ -131,6 +131,16 @@
     <property name="icon">
      <iconset>
       <normaloff>resource/reset.svg</normaloff>resource/reset.svg</iconset>
+    </property>
+   </widget>
+   <widget class="QWidget" name="plotWidget2" native="true">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>220</y>
+      <width>721</width>
+      <height>221</height>
+     </rect>
     </property>
    </widget>
   </widget>
