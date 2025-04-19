@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QMenuBar,QMenu,QStackedWidget
+from PySide6.QtWidgets import QApplication, QMenuBar,QMenu,QStackedWidget,QWidget
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtGui import QIcon,QAction
 from PySide6.QtCore import QObject, QTimer
@@ -9,7 +9,6 @@ import sys
 from Page.Plot import Plot
 from Page.Message import Message
 from Page.Login import Login
-
 class Menu(QObject):
     def __init__(self, ui_file):
         super().__init__()
@@ -25,16 +24,14 @@ class Menu(QObject):
         self.stacked_widget = QStackedWidget()
         
         # 创建各界面实例
-        self.Login_window = Login(Login_path)
         self.Message_window = Message(Message_path)
         self.Plot_window = Plot(Plot_path)
         self.Message_window.clear_button.setIcon(QIcon(broom_icon_path))  # 清空按钮图标
         self.Message_window.pause_button.setIcon(QIcon(pause_icon_path)) 
         self.Message_window.show_img(img_path)  # 显示图片
         self.Plot_window.show_img(img_path)  # 显示图片
-  
+        
         # 将界面添加到堆栈窗口
-        # self.stacked_widget.addWidget(self.Login_window)  # 登录界面
         self.stacked_widget.addWidget(self.Message_window.central_widget)
         self.stacked_widget.addWidget(self.Plot_window.central_widget)
         
@@ -99,12 +96,6 @@ class Menu(QObject):
     def show_message_widget(self):
         """显示消息界面"""
         self.stacked_widget.setCurrentIndex(0)  # 切换到第一个界面
-
-        # 从 QStackedWidget 中移除并销毁登录界面
-        if self.Login_window:
-            self.stacked_widget.removeWidget(self.Login_window)
-            self.Login_window.deleteLater()  # 销毁登录界面对象
-            self.Login_window = None  # 清除引用
         
     def show_plot_widget(self):
         """显示绘图界面"""
@@ -118,17 +109,19 @@ if __name__ == "__main__":
         base_path = os.path.dirname(__file__)
     # 获取相关资源
     img_path = os.path.join(base_path, "resource", "img.png")
+    login_path = os.path.join(base_path, "resource", "login.jpg")
     ui_file = os.path.join(base_path, "Menu.ui")
+    user_path = os.path.join(base_path, "userinfo.csv")
     broom_icon_path = os.path.join(base_path, "resource", "broom.svg")
     pause_icon_path = os.path.join(base_path, "resource", "pause.svg")
     Message_path = os.path.join(base_path, "Message.ui")
     Plot_path = os.path.join(base_path, "Plot.ui")
     Login_path = os.path.join(base_path, "Login.ui")
-
     # 显示登录界面
-    login_window = Login(Login_path)
+    login_window = Login(Login_path,user_path)
+    login_window.show_img(login_path)  # 显示图片
     login_window.window.show()
-
+    
     # 登录成功后显示主界面
     def on_login_success():
         global main_window  # 定义为全局变量
@@ -136,12 +129,12 @@ if __name__ == "__main__":
         main_window.window.resize(895, 630)
         main_window.window.show()
         login_window.window.close()  # 关闭登录界面
-        
 
     login_window.login_success.connect(on_login_success)
-
     # window = Menu(ui_file)
     # window.window.resize(895, 630)
     # window.stacked_widget.setCurrentIndex(0)  # 默认显示登录界面
     # window.window.show()
+  
     sys.exit(app.exec())
+    

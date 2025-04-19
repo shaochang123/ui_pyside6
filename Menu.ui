@@ -62,11 +62,6 @@ QPushButton:pressed {
      <height>26</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuLogin">
-   <property name="title">
-     <string>Login</string>
-    </property>
-   </widget>
    <widget class="QMenu" name="menuFile">
     <property name="styleSheet">
      <string notr="true"/>
@@ -95,7 +90,6 @@ QPushButton:pressed {
      <string>Setting</string>
     </property>
    </widget>
-   <addaction name="menuLogin"/>
    <addaction name="menuFile"/>
    <addaction name="menuMessage"/>
    <addaction name="menuPlot"/>

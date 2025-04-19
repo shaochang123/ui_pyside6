@@ -1,2 +1,0 @@
-class shareInfo:
-    mainwin = None

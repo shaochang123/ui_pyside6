@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('Message.ui', '.'), ('Plot.ui', '.'), ('resource/img.png', 'resource'), ('resource/broom.svg', 'resource'), ('resource/reset.svg', 'resource'), ('resource/pause.svg', 'resource'), ('resource/icon.png', 'resource'), ('Menu.ui', '.')],
+    datas=[('Message.ui', '.'), ('Plot.ui', '.'), ('resource/img.png', 'resource'), ('resource/login.jpg', 'resource'), ('resource/broom.svg', 'resource'), ('resource/reset.svg', 'resource'), ('resource/white.jpg', 'resource'), ('resource/pause.svg', 'resource'), ('resource/icon.png', 'resource'), ('Menu.ui', '.'), ('Login.ui', '.'), ('userinfo.csv', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
