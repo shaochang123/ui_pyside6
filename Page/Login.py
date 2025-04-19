@@ -44,7 +44,7 @@ class Login(QObject):
     def save_user_info(self, username, pwd):
         """
         保存用户信息到远程Ubuntu服务器，如果连接失败则保存到本地
-        
+
         参数:
             username: 用户名
             pwd: 密码
@@ -54,20 +54,20 @@ class Login(QObject):
         remote_user = "xxx"  # SSH用户名
         remote_pass = "xxx"  # SSH密码
         remote_path = "xxx"  # Ubuntu上的文件路径
-        
+
         header = ['name', 'key']
         values = [{'name': username, 'key': pwd}]
-        
+
         try:
             # 尝试连接服务器并保存
             # 创建SSH客户端
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(remote_ip, username=remote_user, password=remote_pass, timeout=5)
-            
+            ssh.connect(remote_ip, username=remote_user, password=remote_pass, timeout=6)  # 设置超时时间为6秒
+
             # 创建SFTP客户端
             sftp = ssh.open_sftp()
-            
+
             # 检查文件是否存在
             file_exists = False
             try:
@@ -75,7 +75,7 @@ class Login(QObject):
                 file_exists = True
             except FileNotFoundError:
                 pass
-            
+
             if file_exists:
                 # 读取现有内容
                 with sftp.file(remote_path, 'r') as f:
@@ -83,28 +83,28 @@ class Login(QObject):
             else:
                 # 创建新文件并添加表头
                 content = ','.join(header) + '\n'
-            
+
             # 添加新用户
             content += f"{username},{pwd}\n"
-            
+
             # 写回文件
             with sftp.file(remote_path, 'w') as f:
                 f.write(content.encode('utf-8'))
-                
+
             sftp.close()
             ssh.close()
-            
+
             print(f"Info has been saved to {remote_ip}:{remote_path}")
             return True
         except Exception as e:
             print(f"Remote server error: {e}")
             print("Attempting to save locally instead...")
-            
+
             # 保存到本地文件
             try:
                 # 检查本地文件是否存在
                 file_exists = os.path.exists(self.user_path)
-                
+
                 if file_exists:
                     # 读取现有内容
                     with open(self.user_path, 'r', encoding='utf-8') as f:
@@ -112,14 +112,14 @@ class Login(QObject):
                 else:
                     # 创建新文件并添加表头
                     content = ','.join(header) + '\n'
-                
+
                 # 添加新用户
                 content += f"{username},{pwd}\n"
-                
+
                 # 写回文件
                 with open(self.user_path, 'w', encoding='utf-8') as f:
                     f.write(content)
-                    
+
                 print(f"Info has been saved locally to {self.user_path}")
                 return True
             except Exception as local_e:
@@ -141,53 +141,47 @@ class Login(QObject):
         remote_pass = "xxx"  # SSH密码
         remote_path = "xxx"  # Ubuntu上的文件路径
         
-        # 添加重试机制
-        max_attempts = 1
-        for attempt in range(max_attempts):
+        try:
+            # 创建SSH客户端
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(remote_ip, username=remote_user, password=remote_pass, timeout=6)  # 设置超时时间为6秒
+            
+            # 创建SFTP客户端
+            sftp = ssh.open_sftp()
+            
             try:
-                # 创建SSH客户端
-                ssh = paramiko.SSHClient()
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh.connect(remote_ip, username=remote_user, password=remote_pass)
+                # 读取文件
+                with sftp.file(remote_path, 'r') as f:
+                    content = f.read().decode('utf-8').splitlines()
                 
-                # 创建SFTP客户端
-                sftp = ssh.open_sftp()
-                
-                try:
-                    # 读取文件
-                    with sftp.file(remote_path, 'r') as f:
-                        content = f.read().decode('utf-8').splitlines()
-                    
-                    # 解析CSV格式
-                    if len(content) > 0:
-                        # 跳过表头
-                        for line in content[1:]:
-                            row = line.split(',')
-                            if len(row) >= 2:
-                                USERS[row[0]] = row[1]
-                except FileNotFoundError:
-                    print(f"Warning: User information file not found on {remote_ip}")
-                
-                sftp.close()
-                ssh.close()
-                return USERS
-                
-            except Exception as e:
-                if attempt < max_attempts - 1:
-                    print(f"Attempt {attempt+1}/{max_attempts} to connect to {remote_ip} failed: {e}")
-                    time.sleep(0.1)  # 等待1秒再尝试
-                else:
-                    print(f"Unable to connect to remote server {remote_ip}: {e}")
-                    # 如果远程访问失败，尝试使用本地备份文件
-
-                    if os.path.exists(self.user_path):
-                        print(f"Using local backup file: {self.user_path}")
-                        with open(self.user_path, 'r', encoding='utf-8') as f:
-                            reader = csv.reader(f)
-                            for row in reader:
-                                if len(row) >= 2:
-                                    USERS[row[0]] = row[1]
-                    return USERS
+                # 解析CSV格式
+                if len(content) > 0:
+                    # 跳过表头
+                    for line in content[1:]:
+                        row = line.split(',')
+                        if len(row) >= 2:
+                            USERS[row[0]] = row[1]
+            except FileNotFoundError:
+                print(f"Warning: User information file not found on {remote_ip}")
+            
+            sftp.close()
+            ssh.close()
+            return USERS
+            
+        except Exception as e:
+            print(f"Unable to connect to remote server {remote_ip}: {e}")
+            print("Switching to local mode...")
+            
+            # 如果远程访问失败，尝试使用本地备份文件
+            if os.path.exists(self.user_path):
+                print(f"Using local backup file: {self.user_path}")
+                with open(self.user_path, 'r', encoding='utf-8') as f:
+                    reader = csv.reader(f)
+                    for row in reader:
+                        if len(row) >= 2:
+                            USERS[row[0]] = row[1]
+            return USERS
     
     def sign_in(self):
         """登录逻辑"""
