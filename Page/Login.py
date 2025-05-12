@@ -48,7 +48,7 @@ class Login(QObject):
     def save_user_info(self, username, pwd):
         """
         保存用户信息到远程Ubuntu服务器，如果连接失败则保存到本地
-        
+
         参数:
             username: 用户名
             pwd: 密码
@@ -58,7 +58,7 @@ class Login(QObject):
         
         header = ['name', 'key']
         values = [{'name': username, 'key': pwd}]
-        
+
         try:
             # 尝试连接服务器并保存
             # 创建SSH客户端
@@ -68,7 +68,7 @@ class Login(QObject):
             
             # 创建SFTP客户端
             sftp = ssh.open_sftp()
-            
+
             # 检查文件是否存在
             file_exists = False
             try:
@@ -76,7 +76,7 @@ class Login(QObject):
                 file_exists = True
             except FileNotFoundError:
                 pass
-            
+
             if file_exists:
                 # 读取现有内容
                 with sftp.file(self.remote_path, 'r') as f:
@@ -84,14 +84,14 @@ class Login(QObject):
             else:
                 # 创建新文件并添加表头
                 content = ','.join(header) + '\n'
-            
+
             # 添加新用户
             content += f"{username},{pwd}\n"
-            
+
             # 写回文件
             with sftp.file(self.remote_path, 'w') as f:
                 f.write(content.encode('utf-8'))
-                
+
             sftp.close()
             ssh.close()
             
@@ -100,12 +100,12 @@ class Login(QObject):
         except Exception as e:
             print(f"Remote server error: {e}")
             print("Attempting to save locally instead...")
-            
+
             # 保存到本地文件
             try:
                 # 检查本地文件是否存在
                 file_exists = os.path.exists(self.user_path)
-                
+
                 if file_exists:
                     # 读取现有内容
                     with open(self.user_path, 'r', encoding='utf-8') as f:
@@ -113,14 +113,14 @@ class Login(QObject):
                 else:
                     # 创建新文件并添加表头
                     content = ','.join(header) + '\n'
-                
+
                 # 添加新用户
                 content += f"{username},{pwd}\n"
-                
+
                 # 写回文件
                 with open(self.user_path, 'w', encoding='utf-8') as f:
                     f.write(content)
-                    
+
                 print(f"Info has been saved locally to {self.user_path}")
                 return True
             except Exception as local_e:
