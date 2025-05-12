@@ -13,6 +13,10 @@ class Login(QObject):
     def __init__(self, ui_file,user_path):
         super().__init__()
         # 加载UI文件
+        self.remote_ip = "58.199.190.181"  # 服务器IP
+        self.remote_user = "group1"  # SSH用户名
+        self.remote_pass = "wqnmd"  # SSH密码
+        self.remote_path = "/data/group1/our_data/user.csv"  # Ubuntu上的文件路径
         self.user_path = user_path
         loader = QUiLoader()
         self.window = loader.load(ui_file, None)
@@ -50,10 +54,7 @@ class Login(QObject):
             pwd: 密码
         """
         # 指定远程服务器信息
-        remote_ip = "xxx.xxx.xxx.xxx"  # 服务器IP
-        remote_user = "xxx"  # SSH用户名
-        remote_pass = "xxx"  # SSH密码
-        remote_path = "xxx"  # Ubuntu上的文件路径
+        
         
         header = ['name', 'key']
         values = [{'name': username, 'key': pwd}]
@@ -63,7 +64,7 @@ class Login(QObject):
             # 创建SSH客户端
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(remote_ip, username=remote_user, password=remote_pass, timeout=5)
+            ssh.connect(self.remote_ip, username=self.remote_user, password=self.remote_pass, timeout=5)
             
             # 创建SFTP客户端
             sftp = ssh.open_sftp()
@@ -71,14 +72,14 @@ class Login(QObject):
             # 检查文件是否存在
             file_exists = False
             try:
-                sftp.stat(remote_path)
+                sftp.stat(self.remote_path)
                 file_exists = True
             except FileNotFoundError:
                 pass
             
             if file_exists:
                 # 读取现有内容
-                with sftp.file(remote_path, 'r') as f:
+                with sftp.file(self.remote_path, 'r') as f:
                     content = f.read().decode('utf-8')
             else:
                 # 创建新文件并添加表头
@@ -88,13 +89,13 @@ class Login(QObject):
             content += f"{username},{pwd}\n"
             
             # 写回文件
-            with sftp.file(remote_path, 'w') as f:
+            with sftp.file(self.remote_path, 'w') as f:
                 f.write(content.encode('utf-8'))
                 
             sftp.close()
             ssh.close()
             
-            print(f"Info has been saved to {remote_ip}:{remote_path}")
+            print(f"Info has been saved to {self.remote_ip}:{self.remote_path}")
             return True
         except Exception as e:
             print(f"Remote server error: {e}")
@@ -135,11 +136,6 @@ class Login(QObject):
             包含用户名和密码的字典
         """
         USERS = {}
-        # 指定远程服务器信息
-        remote_ip = "xxx.xxx.xxx.xxx"  # 服务器IP
-        remote_user = "xxx"  # SSH用户名
-        remote_pass = "xxx"  # SSH密码
-        remote_path = "xxx"  # Ubuntu上的文件路径
         
         # 添加重试机制
         max_attempts = 1
@@ -148,14 +144,14 @@ class Login(QObject):
                 # 创建SSH客户端
                 ssh = paramiko.SSHClient()
                 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh.connect(remote_ip, username=remote_user, password=remote_pass)
+                ssh.connect(self.remote_ip, username=self.remote_user, password=self.remote_pass)
                 
                 # 创建SFTP客户端
                 sftp = ssh.open_sftp()
                 
                 try:
                     # 读取文件
-                    with sftp.file(remote_path, 'r') as f:
+                    with sftp.file(self.remote_path, 'r') as f:
                         content = f.read().decode('utf-8').splitlines()
                     
                     # 解析CSV格式
@@ -166,7 +162,7 @@ class Login(QObject):
                             if len(row) >= 2:
                                 USERS[row[0]] = row[1]
                 except FileNotFoundError:
-                    print(f"Warning: User information file not found on {remote_ip}")
+                    print(f"Warning: User information file not found on {self.remote_ip}")
                 
                 sftp.close()
                 ssh.close()
@@ -174,10 +170,10 @@ class Login(QObject):
                 
             except Exception as e:
                 if attempt < max_attempts - 1:
-                    print(f"Attempt {attempt+1}/{max_attempts} to connect to {remote_ip} failed: {e}")
+                    print(f"Attempt {attempt+1}/{max_attempts} to connect to {self.remote_ip} failed: {e}")
                     time.sleep(0.1)  # 等待1秒再尝试
                 else:
-                    print(f"Unable to connect to remote server {remote_ip}: {e}")
+                    print(f"Unable to connect to remote server {self.remote_ip}: {e}")
                     # 如果远程访问失败，尝试使用本地备份文件
 
                     if os.path.exists(self.user_path):

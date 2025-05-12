@@ -42,10 +42,6 @@ class Plot(MainWindow):
         # 创建曲线对象
         self.curve = self.plot_widget.plot(pen=pg.mkPen('b', width=2))
         self.curve2 = self.plot_widget2.plot(pen=pg.mkPen('b',width=2))
-        # 初始化数据存储
-        self.x_data = []
-        self.y_data = []
-        self.y_data2 = []
         self.start_time = 0
         self.IsOpen = False
         self.IsPause = False
@@ -113,18 +109,15 @@ class Plot(MainWindow):
                 data_line = self.serial_port.readline().decode('utf-8').strip()
                 if data_line[0] == 'A':
                     data_line = data_line.split(',')
-                    x = float(data_line[3].split(':')[1])
-                    y = float(data_line[4].split(':')[1])
-                    z = float(data_line[5].split(':')[1])
-                    self.x = self.x + x*5000/32768;
-                    self.y = self.y + y*5000/32768;
-                    self.z = self.z + z*5000/32768;
-                    self.update_cube_rotation(-self.x*180/3.14159, -self.z*180/3.14159, -self.y*180/3.14159)
+                    x = float(data_line[6].split(':')[1])
+                    y = float(data_line[7].split(':')[1])
+                    z = float(data_line[8].split(':')[1])
+                    self.update_cube_rotation(x, y, z)
                     return
                 data_line = data_line.split(',')  # 取第一个数据点
                 try:
-                    value1 = float(data_line[0])
-                    value2 = float(data_line[2])
+                    value1 = float(data_line[0].split(':')[1])
+                    value2 = float(data_line[2].split(':')[1])
                     current_time = time.time() - self.start_time
                     # 添加新数据点
                     self.x_data.append(current_time)
