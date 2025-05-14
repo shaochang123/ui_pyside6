@@ -51,9 +51,6 @@ class Ui_MainWindow(object):
         self.StartPredict = QPushButton(self.centralwidget)
         self.StartPredict.setObjectName(u"StartPredict")
         self.StartPredict.setGeometry(QRect(180, 520, 71, 71))
-        icon = QIcon()
-        icon.addFile(u"resource/broom.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
-        self.StartPredict.setIcon(icon)
         self.close = QPushButton(self.centralwidget)
         self.close.setObjectName(u"close")
         self.close.setGeometry(QRect(0, 110, 161, 31))
@@ -64,7 +61,6 @@ class Ui_MainWindow(object):
         self.StopPredict = QPushButton(self.centralwidget)
         self.StopPredict.setObjectName(u"StopPredict")
         self.StopPredict.setGeometry(QRect(250, 520, 71, 71))
-        self.StopPredict.setIcon(icon)
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)

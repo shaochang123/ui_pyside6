@@ -3,6 +3,8 @@ import serial  # 第三方库 pyserial
 from Page.MainWindow import MainWindow
 from PySide6.QtCore import QTimer
 import pandas as pd
+
+import numpy as np
 class Learn(MainWindow):
     def __init__(self, ui_file):
         super().__init__(ui_file)
@@ -12,7 +14,7 @@ class Learn(MainWindow):
         self.StopPredict_button = self.central_widget.findChild(QPushButton, "StopPredict")
         self.start_button.clicked.connect(self.start_port)
         self.close_button.clicked.connect(self.close_port) # 暂停按钮图标
-        self.predict_button.clicked.connect(self.predict) #预测
+        self.predict_button.clicked.connect(self.on_predict_button_clicked) #预测
         self.StopPredict_button.clicked.connect(self.stop_predict) # 停止预测
         self.data = []
         # 定时器，用于读取串口数据
@@ -22,6 +24,7 @@ class Learn(MainWindow):
         self.prediction_timer = QTimer()
         self.prediction_timer.timeout.connect(self.predict)
         self.is_predicting = False
+        self.is_com_open = False  # 新增串口状态变量
     def read_serial_data(self):
         # 读取串口数据
         if self.IsOpen and not self.IsPause:
@@ -102,11 +105,14 @@ class Learn(MainWindow):
             self.serial_port = serial.Serial(port, int(baud_rate), timeout=1)
             self.IsOpen = self.serial_port.is_open
             if self.IsOpen:
+                self.is_com_open = True  # 打开端口时设为True
                 self.message.append(f"启动端口成功：端口号={port}, 波特率={baud_rate}")
                 self.timer.start(100)  # 每100毫秒检查一次串口数据
             else:
+                self.is_com_open = False
                 self.message.append("启动端口失败")
         except Exception as e:
+            self.is_com_open = False
             self.message.append(f"启动端口失败：{str(e)}")
 
     def close_port(self):
@@ -118,6 +124,7 @@ class Learn(MainWindow):
             if self.serial_port:
                 self.serial_port.close()
             self.IsOpen = False
+            self.is_com_open = False  # 关闭端口时设为False
             self.timer.stop()  # 停止定时器
             self.message.append("关闭端口成功")
         except Exception as e:
@@ -134,100 +141,102 @@ class Learn(MainWindow):
     def clear_message(self):
         # 清空消息框
         self.message.clear()
+
+    def on_predict_button_clicked(self):
+        if not self.is_com_open:
+            # 串口未打开，只预测一次csv
+            self.predict(use_csv=True)
+        else:
+            # 串口已打开，进入连续预测模式
+            self.start_continuous_prediction()
+
+    
     def start_continuous_prediction(self):
         if not self.is_predicting:
             self.is_predicting = True
             self.message.append("开始连续预测模式...")
-            self.predict_button.setEnabled(False)  # 禁用开始按钮
-            self.StopPredict_button.setEnabled(True)  # 启用停止按钮
-            # 立即进行一次预测
-            self.predict()
-            # 启动定时器，每1秒进行一次预测
-            self.prediction_timer.start(1000)  # 每秒预测一次，可以根据需要调整时间
-
-    def predict(self):
+            self.predict_button.setEnabled(False)
+            self.StopPredict_button.setEnabled(True)
+            self.predict(use_csv=False)  # 用self.data
+            self.prediction_timer.start(1000)
+    def predict(self, use_csv=False):
         import torch
         import os
-        import numpy as np
         from torch.nn.utils.rnn import pad_sequence
 
-        if len(self.data) < 1000:
-            self.message.append("数据不足，无法进行预测")
-            if self.is_predicting:
-                self.stop_predict()
-            return
+        data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+        data_path = os.path.join(data_dir, "data.csv")
+        if use_csv:
+            if not os.path.exists(data_path):
+                self.message.append("未找到data.csv,无法预测")
+                return
+            try:
+                df = pd.read_csv(data_path, encoding='utf-8')
+            except Exception as e:
+                self.message.append(f"读取CSV失败:{str(e)}")
+                return
+        else:
+            if len(self.data) < 1000:
+                self.message.append("数据不足，无法进行预测")
+                if self.is_predicting:
+                    self.stop_predict()
+                return
+            columns = ['EMG_Raw1', 'EMG_Raw2', 'AccelX', 'AccelY', 'AccelZ',
+                    'GyroX', 'GyroY', 'GyroZ', 'AngleX', 'AngleY', 'AngleZ']
+            df = pd.DataFrame(self.data, columns=columns)
 
         try:
-            # 将收集的数据转换为DataFrame
-            columns = ['EMG_Raw1', 'EMG_Raw2', 'AccelX', 'AccelY', 'AccelZ', 
-                      'GyroX', 'GyroY', 'GyroZ', 'AngleX', 'AngleY', 'AngleZ']
-            df = pd.DataFrame(self.data, columns=columns)
+            model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                    "model", "transformer.pt")
+            pkl_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                    "model", "transformer_scalar.pkl")
+            with open(pkl_path, 'rb') as f:
+                import pickle
+                scaler = pickle.load(f)
             
-            # 如果是连续预测模式，就不需要每次都显示预处理信息
-            if not self.is_predicting:
-                self.message.append("开始数据预处理...")
-            
-            features = df.values  # 获取数值数据
-            
-            # 转换为PyTorch张量
-            input_tensor = torch.FloatTensor(features)
-            
-            # 根据模型要求调整形状 - 添加批次维度
-            if len(input_tensor.shape) == 2:  # [seq_len, features]
-                input_tensor = input_tensor.unsqueeze(0)  # [1, seq_len, features]
-            
-            # 加载模型
-            model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-                                     "model", "transformer.pt")
-            
-            # 如果是连续预测模式，就不需要每次都显示加载信息
-            if not self.is_predicting:
-                self.message.append(f"加载模型：{model_path}...")
-            
-            # 检查CUDA是否可用
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            features = df.values
+            features = scaler.transform(features)
+            input_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0).to(device)
+
+            # 创建模块映射，解决找不到 'transformer' 模块的问题
+            import sys
+            from model import transformer
+            sys.modules['transformer'] = transformer  # 将 model.transformer 映射为 transformer
             
-            # 如果是连续预测模式，就不需要每次都显示设备信息
-            if not self.is_predicting:
-                self.message.append(f"使用设备: {device}")
+            # 正确导入模型
+            from model.transformer import TransformerClassifier
+            # 添加完整路径的类名到安全列表
+            from torch.serialization import add_safe_globals
+            add_safe_globals([TransformerClassifier])
             
-            # 加载模型
-            model = torch.load(model_path, map_location=device)
-            model.eval()  # 设置为评估模式
-            
-            # 将数据移动到相同的设备
-            input_tensor = input_tensor.to(device)
-            
-            # 进行预测
+            # 然后加载模型
+            model = TransformerClassifier(
+                input_dim=11,  # 特征数量
+                hidden_dim=64,
+                output_dim=4,  # 类别数
+                num_heads=4,
+                num_layers=2
+            ).to(device)
+            model.load_state_dict(torch.load(model_path, map_location=device))
+            model.eval()
             with torch.no_grad():
                 outputs = model(input_tensor)
-                
-                # 根据模型输出类型处理结果
-                # 假设是分类任务
                 if outputs.dim() > 1 and outputs.shape[-1] > 1:
-                    # 获取预测的类别
                     _, predicted_class = torch.max(outputs, dim=-1)
                     predicted_class = predicted_class.item()
-                    
-                    # 映射类别到具体动作（根据您的实际情况调整）
                     action_mapping = {
                         0: "静止",
                         1: "握拳",
                         2: "伸展",
-                        3: "抓取",
-                        4: "放松"
-                        # 根据需要添加更多映射
+                        3: "摆臂"
                     }
-                    
                     action = action_mapping.get(predicted_class, f"未知动作 ({predicted_class})")
                     result = f"预测动作: {action}"
                 else:
-                    # 如果是回归任务
                     result = f"预测值: {outputs.item():.4f}"
-            
-            # 显示预测结果
+            self.label.clear()
             self.label.setText(result)
-            
         except FileNotFoundError:
             self.message.append("错误：找不到模型文件！请检查模型路径。")
             if self.is_predicting:

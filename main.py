@@ -58,17 +58,26 @@ class Menu(QObject):
         message_action = QAction("消息界面", self)
         plot_action = QAction("绘图界面", self)
         learn_actin = QAction("预测界面", self)
-        File_action = QAction("打开", self)
+        File_action = QAction("Load Model", self)
+        File_action1 = QAction("Load pkl", self)
+        File_action2 = QAction("Load csv", self)
+        File_action3 = QAction("clear csv", self)
         # 将动作添加到已有菜单中
         MenuMessage.addAction(message_action)
         MenuPlot.addAction(plot_action)
         MenuLearn.addAction(learn_actin)
         MenuFile.addAction(File_action)
+        MenuFile.addAction(File_action1)
+        MenuFile.addAction(File_action2)
+        MenuFile.addAction(File_action3)
         # 将动作与槽函数连接，用 setCentralWidget 切换界面
         message_action.triggered.connect(self.show_message_widget)
         plot_action.triggered.connect(self.show_plot_widget)
         learn_actin.triggered.connect(self.show_learn_widget)
         File_action.triggered.connect(self.open_model_file)
+        File_action1.triggered.connect(self.open_pkl_file)
+        File_action2.triggered.connect(self.open_csv_file)
+        File_action3.triggered.connect(self.clear_csv_file)
         # 只创建一个全局定时器来更新所有界面的端口列表
         self.port_refresh_timer = QTimer()
         self.port_refresh_timer.timeout.connect(self.update_all_ports)
@@ -111,10 +120,7 @@ class Menu(QObject):
                     f"模型文件已成功更新到：\n{target_file}"
                 )
                 
-                # # 如果当前显示的是学习界面，可以在这里刷新模型（可选）
-                # if self.stacked_widget.currentIndex() == 2:
-                #     # 可以在这里添加刷新模型的代码，或提示用户重启应用
-                #     pass
+                
                     
         except Exception as e:
             from PySide6.QtWidgets import QMessageBox
@@ -123,7 +129,122 @@ class Menu(QObject):
                 "错误",
                 f"更新模型文件时出错：{str(e)}"
             )
-
+    def open_csv_file(self):
+        """打开csv文件并替换data目录中的data.csv文件"""
+        try:
+            # 获取可执行文件或脚本所在的基本路径
+            if getattr(sys, 'frozen', False):
+                base_path = sys._MEIPASS
+            else:
+                base_path = os.path.dirname(os.path.abspath(__file__))
+            
+            # 打开文件对话框，只显示.pt文件
+            file_path, _ = QFileDialog.getOpenFileName(
+                self.window,
+                "选择csv文件",
+                "",
+                "csv文件 (*.csv)"
+            )
+            
+            if file_path:
+                # 确保model目录存在
+                model_dir = os.path.join(base_path, "data")
+                if not os.path.exists(model_dir):
+                    os.makedirs(model_dir)
+                
+                # 目标文件路径
+                target_file = os.path.join(model_dir, "data.csv")
+                
+                # 复制选择的文件到目标位置（会覆盖现有文件）
+                shutil.copy2(file_path, target_file)
+                
+                # 通知用户文件已成功替换
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.information(
+                    self.window,
+                    "成功",
+                    f"csv文件已成功更新到：\n{target_file}"
+                )  
+        except Exception as e:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(
+                self.window,
+                "错误",
+                f"更新csv文件时出错：{str(e)}"
+            )
+    def open_pkl_file(self):
+        try:
+            # 获取可执行文件或脚本所在的基本路径
+            if getattr(sys, 'frozen', False):
+                base_path = sys._MEIPASS
+            else:
+                base_path = os.path.dirname(os.path.abspath(__file__))
+            
+            # 打开文件对话框，只显示.pt文件
+            file_path, _ = QFileDialog.getOpenFileName(
+                self.window,
+                "选择pkl文件",
+                "",
+                "pkl文件 (*.pkl)"
+            )
+            
+            if file_path:
+                # 确保model目录存在
+                model_dir = os.path.join(base_path, "model")
+                if not os.path.exists(model_dir):
+                    os.makedirs(model_dir)
+                
+                # 目标文件路径
+                target_file = os.path.join(model_dir, "transformer_scalar.pkl")
+                
+                # 复制选择的文件到目标位置（会覆盖现有文件）
+                shutil.copy2(file_path, target_file)
+                
+                # 通知用户文件已成功替换
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.information(
+                    self.window,
+                    "成功",
+                    f"pkl文件已成功更新到：\n{target_file}"
+                )  
+        except Exception as e:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(
+                self.window,
+                "错误",
+                f"更新csv文件时出错：{str(e)}"
+            )
+    def clear_csv_file(self):
+        """删除data目录下的data.csv文件"""
+        try:
+            if getattr(sys, 'frozen', False):
+                base_path = sys._MEIPASS
+            else:
+                base_path = os.path.dirname(os.path.abspath(__file__))
+            data_dir = os.path.join(base_path, "data")
+            csv_path = os.path.join(data_dir, "data.csv")
+            if os.path.exists(csv_path):
+                os.remove(csv_path)
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.information(
+                    self.window,
+                    "成功",
+                    f"csv文件已成功删除：\n{csv_path}"
+                )
+            else:
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.warning(
+                    self.window,
+                    "提示",
+                    f"csv文件不存在：\n{csv_path}"
+                )
+        except Exception as e:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(
+                self.window,
+                "错误",
+                f"删除csv文件时出错：{str(e)}"
+            )
     # 更新端口等现有方法保持不变
     def update_all_ports(self):
         """更新所有界面的端口列表"""

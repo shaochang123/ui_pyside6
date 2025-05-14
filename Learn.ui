@@ -111,10 +111,6 @@
     <property name="text">
      <string>开始预测</string>
     </property>
-    <property name="icon">
-     <iconset>
-      <normaloff>resource/broom.svg</normaloff>resource/broom.svg</iconset>
-    </property>
    </widget>
    <widget class="QPushButton" name="close">
     <property name="geometry">
@@ -153,10 +149,6 @@
     </property>
     <property name="text">
      <string>停止预测</string>
-    </property>
-    <property name="icon">
-     <iconset>
-      <normaloff>resource/broom.svg</normaloff>resource/broom.svg</iconset>
     </property>
    </widget>
   </widget>
