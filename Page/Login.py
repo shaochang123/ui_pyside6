@@ -15,7 +15,7 @@ class Login(QObject):
         # 加载UI文件
         self.remote_ip = "58.199.190.181"  # 服务器IP
         self.remote_user = "group1"  # SSH用户名
-        self.remote_pass = "xxxxx"  # SSH密码
+        self.remote_pass = "xxxx"  # SSH密码
         self.remote_path = "/data/group1/our_data/user.csv"  # Ubuntu上的文件路径
         self.user_path = user_path
         loader = QUiLoader()

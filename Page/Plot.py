@@ -13,6 +13,8 @@ class Plot(MainWindow):
         self.start_button.clicked.connect(self.start_port)
         self.close_button.clicked.connect(self.close_port)
         self.reset_button.clicked.connect(self.reset)
+        self.show_button = self.central_widget.findChild(QPushButton, "show_button")
+        self.show_button.clicked.connect(self.show_csv)
         # 找到占位的QWidget
         self.plot_container = self.central_widget.findChild(QWidget, "plotWidget")
         # 找到占位的QWidget
@@ -219,4 +221,82 @@ class Plot(MainWindow):
         self.x = 0
         self.y = 0
         self.z = 0
-    
+        
+    def show_csv(self):
+        """显示data.csv中的数据到图表和立方体上"""
+        # 检查端口是否关闭
+        if self.IsOpen:
+            print("请先关闭串口后再查看CSV数据")
+            return
+            
+        # 检查data.csv文件是否存在
+        import os
+        import pandas as pd
+        
+        data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+        data_path = os.path.join(data_dir, "data.csv")
+        
+        if not os.path.exists(data_path):
+            print(f"找不到文件: {data_path}")
+            return
+        
+        try:
+            # 读取CSV文件
+            df = pd.read_csv(data_path)
+            
+            # 检查必需的列
+            required_columns = ['EMG_Raw1', 'EMG_Raw2', 'AngleX', 'AngleY', 'AngleZ']
+            missing_columns = [col for col in required_columns if col not in df.columns]
+            if missing_columns:
+                print(f"CSV文件缺少必要列: {', '.join(missing_columns)}")
+                return
+                
+            # 准备数据
+            x_data = list(range(len(df)))
+            emg1_data = df['EMG_Raw1'].tolist()
+            emg2_data = df['EMG_Raw2'].tolist()
+            
+            # 更新图表
+            self.curve.setData(x_data, emg1_data)
+            self.curve2.setData(x_data, emg2_data)
+            
+            # 更新图表标题
+            self.plot_widget.setTitle('EMG1数据 (从CSV文件)')
+            self.plot_widget2.setTitle('EMG2数据 (从CSV文件)')
+            
+            # 自动调整坐标范围
+            self.plot_widget.enableAutoRange()
+            self.plot_widget2.enableAutoRange()
+            
+            # 存储所有角度数据用于动画
+            self.angle_data = list(zip(df['AngleX'], df['AngleY'], df['AngleZ']))
+            self.current_frame = 0
+
+            # 创建动画定时器
+            if hasattr(self, 'angle_timer'):
+                self.angle_timer.stop()
+                
+            self.angle_timer = QTimer()
+            self.angle_timer.timeout.connect(self.animate_angles)
+            self.angle_timer.start(200)  # 20 FPS
+            
+            print(f"已加载 {len(df)} 条CSV数据记录")
+            
+        except Exception as e:
+            import traceback
+            print(f"读取CSV数据失败: {str(e)}")
+            print(traceback.format_exc())
+
+    def animate_angles(self):
+        """动画展示立方体旋转"""
+        if not hasattr(self, 'angle_data') or not self.angle_data:
+            return
+            
+        # 更新当前帧
+        self.current_frame = (self.current_frame + 1) % len(self.angle_data)
+        
+        # 获取当前帧的角度数据
+        angle_x, angle_y, angle_z = self.angle_data[self.current_frame]
+        
+        # 更新立方体旋转
+        self.update_cube_rotation(angle_x, angle_y, angle_z)

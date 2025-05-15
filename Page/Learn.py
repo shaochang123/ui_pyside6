@@ -228,7 +228,7 @@ class Learn(MainWindow):
                     action_mapping = {
                         0: "静止",
                         1: "握拳",
-                        2: "伸展",
+                        2: "弯举",
                         3: "摆臂"
                     }
                     action = action_mapping.get(predicted_class, f"未知动作 ({predicted_class})")

@@ -143,6 +143,19 @@
      </rect>
     </property>
    </widget>
+   <widget class="QPushButton" name="show_button">
+    <property name="geometry">
+     <rect>
+      <x>460</x>
+      <y>470</y>
+      <width>75</width>
+      <height>81</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>展示csv</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>
