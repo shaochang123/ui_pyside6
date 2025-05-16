@@ -128,7 +128,7 @@
    <widget class="QTextEdit" name="label">
     <property name="geometry">
      <rect>
-      <x>320</x>
+      <x>360</x>
       <y>520</y>
       <width>104</width>
       <height>71</height>
@@ -141,7 +141,7 @@
    <widget class="QPushButton" name="StopPredict">
     <property name="geometry">
      <rect>
-      <x>250</x>
+      <x>270</x>
       <y>520</y>
       <width>71</width>
       <height>71</height>
@@ -149,6 +149,19 @@
     </property>
     <property name="text">
      <string>停止预测</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="status">
+    <property name="geometry">
+     <rect>
+      <x>480</x>
+      <y>540</y>
+      <width>31</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
     </property>
    </widget>
   </widget>

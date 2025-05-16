@@ -11,7 +11,7 @@ from Page.Plot import Plot
 from Page.Message import Message
 from Page.Login import Login
 from Page.Learn import Learn
-
+from Page.MainWindow import MainWindow
 class Menu(QObject):
     def __init__(self, ui_file):
         super().__init__()
@@ -29,16 +29,15 @@ class Menu(QObject):
         # 创建各界面实例
         self.Message_window = Message(Message_path)
         self.Plot_window = Plot(Plot_path)
-        self.learn_window = Learn(Learn_path)
+        self.Learn_window = Learn(Learn_path)
         self.Message_window.clear_button.setIcon(QIcon(broom_icon_path))  # 清空按钮图标
-        self.Message_window.pause_button.setIcon(QIcon(pause_icon_path)) 
         self.Message_window.show_img(img_path)  # 显示图片
         self.Plot_window.show_img(img_path)  # 显示图片
-        self.learn_window.show_img(img_path)
+        self.Learn_window.show_img(img_path)
         # 将界面添加到堆栈窗口
         self.stacked_widget.addWidget(self.Message_window.central_widget)
         self.stacked_widget.addWidget(self.Plot_window.central_widget)
-        self.stacked_widget.addWidget(self.learn_window.central_widget)
+        self.stacked_widget.addWidget(self.Learn_window.central_widget)
         # 设置堆栈窗口为中心窗口
         self.window.setCentralWidget(self.stacked_widget)
 
@@ -78,10 +77,6 @@ class Menu(QObject):
         File_action1.triggered.connect(self.open_pkl_file)
         File_action2.triggered.connect(self.open_csv_file)
         File_action3.triggered.connect(self.clear_csv_file)
-        # 只创建一个全局定时器来更新所有界面的端口列表
-        self.port_refresh_timer = QTimer()
-        self.port_refresh_timer.timeout.connect(self.update_all_ports)
-        self.port_refresh_timer.start(1000)  # 每秒刷新一次
 
     def open_model_file(self):
         """打开模型文件并替换model目录中的transformer.pt文件"""
@@ -245,39 +240,52 @@ class Menu(QObject):
                 "错误",
                 f"删除csv文件时出错：{str(e)}"
             )
-    # 更新端口等现有方法保持不变
-    def update_all_ports(self):
-        """更新所有界面的端口列表"""
-        try:
-            # 获取当前可用的串口
-            ports = [port.device for port in serial.tools.list_ports.comports()]
-            
-            # 更新 Message 界面的端口列表
-            if hasattr(self.Message_window, 'com_combo'):
-                current_ports = set(self.Message_window.com_combo.itemText(i) for i in range(self.Message_window.com_combo.count()))
-                if set(ports) != current_ports:
-                    self.Message_window.com_combo.clear()
-                    self.Message_window.com_combo.addItems(ports)
-            
-            # 更新 Plot 界面的端口列表
-            if hasattr(self.Plot_window, 'com_combo'):
-                current_ports = set(self.Plot_window.com_combo.itemText(i) for i in range(self.Plot_window.com_combo.count()))
-                if set(ports) != current_ports:
-                    self.Plot_window.com_combo.clear()
-                    self.Plot_window.com_combo.addItems(ports)
-        except Exception as e:
-            print(f"更新端口列表时出错: {e}")
             
     def show_message_widget(self):
-        """显示消息界面"""
-        self.stacked_widget.setCurrentIndex(0)  # 切换到第一个界面
-        
+        """显示消息界面，同时更新串口状态"""
+        self.stop_all_timers()
+        # 切换到消息界面
+        self.stacked_widget.setCurrentIndex(0)
+        # 同步串口状态
+        self.sync_port_status(self.Message_window)
+        # 如果串口已打开，启动当前界面的定时器
+        if MainWindow.IsOpen:
+            self.Message_window.timer.start(3)  # 启动读取定时器
+    
     def show_plot_widget(self):
-        """显示绘图界面"""
-        self.stacked_widget.setCurrentIndex(1)  # 切换到第二个界面
-        
+        """显示绘图界面，同时更新串口状态"""
+        self.stop_all_timers()
+        self.stacked_widget.setCurrentIndex(1)
+        self.sync_port_status(self.Plot_window)
+        if MainWindow.IsOpen:
+            self.Plot_window.timer.start(3)  # 启动读取定时器
+    
     def show_learn_widget(self):
-        self.stacked_widget.setCurrentIndex(2)  # 切换到第三个界面
+        """显示学习界面，同时更新串口状态"""
+        self.stop_all_timers()
+        self.stacked_widget.setCurrentIndex(2)
+        self.sync_port_status(self.Learn_window)
+        if MainWindow.IsOpen:
+            self.Learn_window.timer.start(3)  # 启动读取定时器
+
+    
+    def sync_port_status(self, window):
+        """同步当前窗口的串口状态"""
+        window.com_combo.setCurrentText(MainWindow.current_port)
+        window.baud_combo.setCurrentText(MainWindow.current_baud)
+        if MainWindow.current_port:
+            window.com_name.setText(MainWindow.current_port)
+        if MainWindow.current_baud:
+            window.bote_name.setText(MainWindow.current_baud)
+
+    def stop_all_timers(self):
+        """停止所有界面的读取定时器"""
+        if hasattr(self.Message_window, 'timer'):
+            self.Message_window.timer.stop()
+        if hasattr(self.Plot_window, 'timer'):
+            self.Plot_window.timer.stop()
+        if hasattr(self.Learn_window, 'timer'):
+            self.Learn_window.timer.stop()
 
 if __name__ == "__main__":
     app = QApplication([])
@@ -291,7 +299,6 @@ if __name__ == "__main__":
     ui_file = os.path.join(base_path, "Menu.ui")
     user_path = os.path.join(base_path, "userinfo.csv")
     broom_icon_path = os.path.join(base_path, "resource", "broom.svg")
-    pause_icon_path = os.path.join(base_path, "resource", "pause.svg")
     Message_path = os.path.join(base_path, "Message.ui")
     Plot_path = os.path.join(base_path, "Plot.ui")
     Login_path = os.path.join(base_path, "Login.ui")

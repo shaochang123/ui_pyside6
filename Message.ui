@@ -129,23 +129,6 @@
      <string>关闭端口</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pause">
-    <property name="geometry">
-     <rect>
-      <x>270</x>
-      <y>520</y>
-      <width>71</width>
-      <height>71</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-    <property name="icon">
-     <iconset>
-      <normaloff>resource/pause.svg</normaloff>resource/pause.svg</iconset>
-    </property>
-   </widget>
   </widget>
  </widget>
  <resources/>

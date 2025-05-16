@@ -45,9 +45,10 @@ class Plot(MainWindow):
         self.curve = self.plot_widget.plot(pen=pg.mkPen('b', width=2))
         self.curve2 = self.plot_widget2.plot(pen=pg.mkPen('b',width=2))
         self.start_time = 0
-        self.IsOpen = False
-        self.IsPause = False
-        
+        self.x_data = []
+        self.y_data = []
+        self.y_data2 = []
+  
         # 创建定时器用于更新图表
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_plot)
@@ -59,56 +60,23 @@ class Plot(MainWindow):
         self.setup_3d_cube(self.x, self.y, self.z)
         
     def start_port(self):
-        if self.IsOpen:
-            print("端口已经打开")
-            return
-        # 获取端口号和波特率
-        port = self.com_name.toPlainText().strip()
-        baud_rate = self.bote_name.toPlainText().strip()
-
-        if not port or not baud_rate:
-            print("启动端口失败：端口号或波特率为空")
-            return
-
-        # 打开端口逻辑
-        try:
-            self.serial_port = serial.Serial(port, int(baud_rate), timeout=1)
-            self.IsOpen = self.serial_port.is_open
-            if self.IsOpen:
-                # 画图初始化
-                self.start_time = time.time()  # 记录开始时间
-                self.x_data = []
-                self.y_data = []
-                self.y_data2 = []
-                self.curve.setData(self.x_data, self.y_data)
-                self.curve2.setData(self.x_data,self.y_data2)
-                self.timer.start(50)  # 每50ms更新一次图表
-                print("端口打开成功，开始绘制数据...")
-            else:
-                print("启动端口失败")
-        except Exception as e:
-            print(f"启动端口失败：{str(e)}")
-
-    def close_port(self):  # 关闭端口
-        if not self.IsOpen:
-            print("端口未打开")
-            return
-        # 关闭端口逻辑
-        try:
-            if self.serial_port:
-                self.serial_port.close()
-            self.IsOpen = False
-            self.timer.stop()  # 停止定时器
-            print("关闭端口成功")
-        except Exception as e:
-            print(f"关闭端口失败：{str(e)}")
+        MainWindow.start_mport(self)
+        if MainWindow.IsOpen and self.central_widget.isVisible():
+                # self.message.append(f"启动端口成功：端口号={port}, 波特率={baud_rate}")
+                self.timer.start(3)  # 启动读取定时器
+        else:
+            self.message.append("启动端口失败")
+    def close_port(self):
+        MainWindow.close_mport(self)
+        if MainWindow.IsOpen:
+            self.timer.stop()
 
     def update_plot(self):
-        if not self.IsOpen or self.IsPause:
+        if not MainWindow.IsOpen:
             return
         try:
-            if self.serial_port.in_waiting > 0:
-                data_line = self.serial_port.readline().decode('utf-8').strip()
+            if MainWindow.serial_port.in_waiting > 0:
+                data_line = MainWindow.serial_port.readline().decode('utf-8').strip()
                 if data_line[0] == 'A':
                     data_line = data_line.split(',')
                     x = float(data_line[6].split(':')[1])

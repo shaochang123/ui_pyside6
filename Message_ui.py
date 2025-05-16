@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'Learn.ui'
+## Form generated from reading UI file 'Message.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.0
 ##
@@ -15,9 +15,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QComboBox, QGraphicsView, QLabel,
-    QMainWindow, QPushButton, QSizePolicy, QTextEdit,
-    QWidget)
+from PySide6.QtWidgets import (QApplication, QComboBox, QGraphicsView, QMainWindow,
+    QPushButton, QSizePolicy, QTextEdit, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -49,22 +48,15 @@ class Ui_MainWindow(object):
         self.message.setObjectName(u"message")
         self.message.setGeometry(QRect(170, 0, 731, 521))
         self.message.setReadOnly(True)
-        self.StartPredict = QPushButton(self.centralwidget)
-        self.StartPredict.setObjectName(u"StartPredict")
-        self.StartPredict.setGeometry(QRect(180, 520, 71, 71))
+        self.clear = QPushButton(self.centralwidget)
+        self.clear.setObjectName(u"clear")
+        self.clear.setGeometry(QRect(180, 520, 71, 71))
+        icon = QIcon()
+        icon.addFile(u"resource/broom.svg", QSize(), QIcon.Mode.Normal, QIcon.State.Off)
+        self.clear.setIcon(icon)
         self.close = QPushButton(self.centralwidget)
         self.close.setObjectName(u"close")
         self.close.setGeometry(QRect(0, 110, 161, 31))
-        self.label = QTextEdit(self.centralwidget)
-        self.label.setObjectName(u"label")
-        self.label.setGeometry(QRect(360, 520, 104, 71))
-        self.label.setReadOnly(True)
-        self.StopPredict = QPushButton(self.centralwidget)
-        self.StopPredict.setObjectName(u"StopPredict")
-        self.StopPredict.setGeometry(QRect(270, 520, 71, 71))
-        self.status = QLabel(self.centralwidget)
-        self.status.setObjectName(u"status")
-        self.status.setGeometry(QRect(480, 540, 31, 31))
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
@@ -77,9 +69,7 @@ class Ui_MainWindow(object):
         self.ComName.setPlaceholderText(QCoreApplication.translate("MainWindow", u"\u8f93\u5165\u7aef\u53e3\u53f7", None))
         self.BaudName.setPlaceholderText(QCoreApplication.translate("MainWindow", u"\u8f93\u5165\u6ce2\u7279\u7387", None))
         self.start.setText(QCoreApplication.translate("MainWindow", u"\u542f\u52a8\u7aef\u53e3", None))
-        self.StartPredict.setText(QCoreApplication.translate("MainWindow", u"\u5f00\u59cb\u9884\u6d4b", None))
+        self.clear.setText("")
         self.close.setText(QCoreApplication.translate("MainWindow", u"\u5173\u95ed\u7aef\u53e3", None))
-        self.StopPredict.setText(QCoreApplication.translate("MainWindow", u"\u505c\u6b62\u9884\u6d4b", None))
-        self.status.setText("")
     # retranslateUi
 

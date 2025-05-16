@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QTextEdit, QPushButton
+from PySide6.QtWidgets import QTextEdit, QPushButton, QLabel
 import serial  # 第三方库 pyserial
 from Page.MainWindow import MainWindow
 from PySide6.QtCore import QTimer
@@ -17,6 +17,8 @@ class Learn(MainWindow):
         self.predict_button.clicked.connect(self.on_predict_button_clicked) #预测
         self.StopPredict_button.clicked.connect(self.stop_predict) # 停止预测
         self.data = []
+        self.emg_buffer = []
+        self.sensor_buffer = []
         # 定时器，用于读取串口数据
         self.timer = QTimer()
         self.timer.timeout.connect(self.read_serial_data)
@@ -24,13 +26,24 @@ class Learn(MainWindow):
         self.prediction_timer = QTimer()
         self.prediction_timer.timeout.connect(self.predict)
         self.is_predicting = False
-        self.is_com_open = False  # 新增串口状态变量
+
+        # 创建指示灯
+        self.status_indicator = self.central_widget.findChild(QLabel, "status")
+        self.status_indicator.setStyleSheet(
+            "background-color: red; border-radius: 8px; margin: 2px;"
+        )
+        # 创建指示灯状态监测定时器
+        self.indicator_timer = QTimer()
+        self.indicator_timer.timeout.connect(self.update_status_indicator)
+        self.indicator_timer.start(1000)  # 每秒检查一次状态
+
     def read_serial_data(self):
         # 读取串口数据
-        if self.IsOpen and not self.IsPause:
+        if MainWindow.IsOpen:
             try:
-                if self.serial_port.in_waiting > 0:  # 检查是否有数据可读
-                    line = self.serial_port.readline().decode('utf-8').strip()
+                if MainWindow.serial_port.in_waiting > 0:  # 检查是否有数据可读
+                    line = MainWindow.serial_port.readline().decode('utf-8').strip()
+                    self.message.append(f"{line}")
                     if "A" in line:
                         # 将键值对格式的字符串转换为字典
                         values_dict = {}
@@ -54,7 +67,7 @@ class Learn(MainWindow):
                         Angle_y = values_dict.get('AngleY')
                         Angle_z = values_dict.get('AngleZ')
                         # 将加速度和陀螺仪数据存储到缓冲区
-                        sensor_buffer = [accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, Angle_x, Angle_y, Angle_z]
+                        self.sensor_buffer = [accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z, Angle_x, Angle_y, Angle_z]
                     # 处理第二种格式（数值列表，表示肌电信号和检测值）
                     else:
                         values_dict = {}# 修改数据处理部分代码
@@ -73,77 +86,37 @@ class Learn(MainWindow):
                         if 'EMG1' in values_dict and 'EMG2' in values_dict:
                             emg1 = values_dict.get('EMG1')
                             emg2 = values_dict.get('EMG2')
-                            emg_buffer = [emg1, emg2]
+                            self.emg_buffer = [emg1, emg2]
+                            
                     # 检查是否同时有肌电信号和传感器数据
-                    if emg_buffer and sensor_buffer:
+                    if self.emg_buffer and self.sensor_buffer:
                         # 合并数据
-                        combined_data = emg_buffer + sensor_buffer
+                        combined_data = self.emg_buffer + self.sensor_buffer
                         self.data.append(combined_data)
                         # 限制数据长度为1000，超出时删除最早的数据
                         if len(self.data) > 1000:
                             self.data.pop(0)
                         # 清空缓冲区
-                        emg_buffer = []
-                        sensor_buffer = []
+                        self.emg_buffer = []
+                        self.sensor_buffer = []
                         
             except Exception as e:
                 self.message.append(f"读取数据失败：{str(e)}")
+
     def start_port(self):
-        if self.IsOpen:
-            self.message.append("端口已经打开")
-            return
-        # 获取端口号和波特率
-        port = self.com_name.toPlainText().strip()
-        baud_rate = self.bote_name.toPlainText().strip()
-
-        if not port or not baud_rate:
-            self.message.append("启动端口失败：端口号或波特率为空")
-            return
-
-        # 打开端口逻辑
-        try:
-            self.serial_port = serial.Serial(port, int(baud_rate), timeout=1)
-            self.IsOpen = self.serial_port.is_open
-            if self.IsOpen:
-                self.is_com_open = True  # 打开端口时设为True
-                self.message.append(f"启动端口成功：端口号={port}, 波特率={baud_rate}")
-                self.timer.start(100)  # 每100毫秒检查一次串口数据
-            else:
-                self.is_com_open = False
-                self.message.append("启动端口失败")
-        except Exception as e:
-            self.is_com_open = False
-            self.message.append(f"启动端口失败：{str(e)}")
-
+        MainWindow.start_mport(self)
+        if MainWindow.IsOpen and self.central_widget.isVisible():
+                # self.message.append(f"启动端口成功：端口号={port}, 波特率={baud_rate}")
+                self.timer.start(3)  # 启动读取定时器
+        else:
+            self.message.append("启动端口失败")
     def close_port(self):
-        if not self.IsOpen:
-            self.message.append("端口未打开")
-            return
-        # 关闭端口逻辑
-        try:
-            if self.serial_port:
-                self.serial_port.close()
-            self.IsOpen = False
-            self.is_com_open = False  # 关闭端口时设为False
-            self.timer.stop()  # 停止定时器
-            self.message.append("关闭端口成功")
-        except Exception as e:
-            self.message.append(f"关闭端口失败：{str(e)}")
-
-    def toggle_pause(self):
-        if not self.IsOpen:
-            self.message.append("端口未打开，无法暂停")
-            return
-        self.IsPause = not self.IsPause  # 切换暂停状态
-        state = "暂停" if self.IsPause else "继续"
-        self.message.append(f"串口读取已{state}")
-
-    def clear_message(self):
-        # 清空消息框
-        self.message.clear()
+        MainWindow.close_mport(self)
+        if MainWindow.IsOpen:
+            self.timer.stop()
 
     def on_predict_button_clicked(self):
-        if not self.is_com_open:
+        if not MainWindow.IsOpen:
             # 串口未打开，只预测一次csv
             self.predict(use_csv=True)
         else:
@@ -154,11 +127,13 @@ class Learn(MainWindow):
     def start_continuous_prediction(self):
         if not self.is_predicting:
             self.is_predicting = True
+            self.update_status_indicator()
             self.message.append("开始连续预测模式...")
             self.predict_button.setEnabled(False)
             self.StopPredict_button.setEnabled(True)
             self.predict(use_csv=False)  # 用self.data
             self.prediction_timer.start(1000)
+    
     def predict(self, use_csv=False):
         import torch
         import os
@@ -254,6 +229,20 @@ class Learn(MainWindow):
             self.is_predicting = False
             self.message.append("已停止连续预测")
             self.predict_button.setEnabled(True)  # 重新启用开始按钮
-            self.StopPredict_button.setEnabled(True)  # 仍然保持停止按钮可用
+            self.StopPredict_button.setEnabled(False)  # 仍然保持停止按钮可用
+            self.label.clear()
+
+    def update_status_indicator(self):
+        """定时检查预测状态并更新指示灯"""
+        if self.is_predicting:
+            # 预测中 - 绿色
+            self.status_indicator.setStyleSheet(
+                "background-color: green; border-radius: 8px; margin: 2px; border: 1px solid darkgreen;"
+            )
+        else:
+            # 未预测 - 红色
+            self.status_indicator.setStyleSheet(
+                "background-color: red; border-radius: 8px; margin: 2px; border: 1px solid darkred;"
+            )
 
 
