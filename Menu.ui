@@ -85,16 +85,10 @@ QPushButton:pressed {
      <string>Learn</string>
     </property>
    </widget>
-   <widget class="QMenu" name="menuSetting">
-    <property name="title">
-     <string>Setting</string>
-    </property>
-   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuMessage"/>
    <addaction name="menuPlot"/>
    <addaction name="menuLearn"/>
-   <addaction name="menuSetting"/>
   </widget>
  </widget>
  <resources/>
